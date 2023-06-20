@@ -1,4 +1,4 @@
-from ariadne import QueryType, make_executable_schema, gql, ObjectType
+from ariadne import QueryType, make_executable_schema, gql, ObjectType, MutationType
 from todo.models import Todo
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -8,6 +8,10 @@ type_defs = gql("""
         user: User!
         todoTasks: [Todo]!
         todoTask(pk: String!): Todo!
+    }
+
+    type Mutation {
+        createTask(name:String!, description: String): Todo!
     }
 
     type User {
@@ -48,6 +52,15 @@ def resolve_todoTask(*_, pk):
         return "Todo task with name does not exist"
 
 
+mutation = MutationType()
+
+@mutation.field("createTask")
+def resolve_createTask(*_, name, description):
+    task = Todo.objects.create(name=name, description=description)
+    task.save()
+    return task
+
+
 user = ObjectType('User')
 
 
@@ -66,4 +79,4 @@ def resolve_todo_name(*_):
     pass
 
 # making the Python code schema executable in GraphQL
-schema = make_executable_schema(type_defs, query, user)
+schema = make_executable_schema(type_defs, user, query, mutation)
