@@ -11,6 +11,8 @@ type_defs = gql("""
 
     type Mutation {
         createTask(name:String!, description: String): Todo!
+        updateTask(pk: Int!, name: String, description: String): Todo!
+        deleteTask(pk: Int!): String
     }
 
 
@@ -53,6 +55,22 @@ def resolve_createTask(*_, name, description):
     task = Todo.objects.create(name=name, description=description)
     task.save()
     return task
+
+@mutation.field("updateTask")
+def resolve_updateTask(*_, pk, name=None, description=None):
+    task = Todo.objects.get(pk=pk)
+    if name:
+        task.name = name
+    if description:
+        task.description = description
+    task.save()
+    return task
+
+@mutation.field("deleteTask")
+def resolve_deleteTask(*_, pk):
+    task = Todo.objects.get(pk=pk)
+    task.delete()
+    return "Task deleted"
 
 
 # making the Python code schema executable in GraphQL
