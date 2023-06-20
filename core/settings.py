@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # local_apps
+    "todo",
 
     # 3rd party
     "ariadne_django",
