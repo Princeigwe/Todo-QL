@@ -5,7 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist
 type_defs = gql("""
     type Query {
         hello: String!
-        user: User!
         todoTasks: [Todo]!
         todoTask(pk: String!): Todo!
     }
@@ -14,10 +13,6 @@ type_defs = gql("""
         createTask(name:String!, description: String): Todo!
     }
 
-    type User {
-        firstName: String
-        lastName: String!
-    }
 
     type Todo {
         name: String
@@ -33,9 +28,6 @@ query = QueryType()
 def resolve_hello(*_):
     return "Hello Prince"
 
-@query.field('user')
-def resolve_user(obj, info):
-    return user
 
 @query.field("todoTasks")
 def resolve_todoTasks(*_):
@@ -54,6 +46,7 @@ def resolve_todoTask(*_, pk):
 
 mutation = MutationType()
 
+
 @mutation.field("createTask")
 def resolve_createTask(*_, name, description):
     task = Todo.objects.create(name=name, description=description)
@@ -61,22 +54,5 @@ def resolve_createTask(*_, name, description):
     return task
 
 
-user = ObjectType('User')
-
-
-@user.field('firstName')
-def resolve_user_firstName(*_):
-    return "Prince"
-
-@user.field('lastName')
-def resolve_user_lastName(*_):
-    return "Igwe"
-
-todo = ObjectType('Todo')
-
-@todo.field('name')
-def resolve_todo_name(*_):
-    pass
-
 # making the Python code schema executable in GraphQL
-schema = make_executable_schema(type_defs, user, query, mutation)
+schema = make_executable_schema(type_defs, query, mutation)
