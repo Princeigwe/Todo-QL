@@ -15,6 +15,7 @@ type_defs = gql("""
 
 
     type Todo {
+        pk: String
         name: String
         description: String
     }
