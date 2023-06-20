@@ -1,11 +1,13 @@
 from ariadne import QueryType, make_executable_schema, gql, ObjectType
 from todo.models import Todo
+from django.core.exceptions import ObjectDoesNotExist
 
 type_defs = gql("""
     type Query {
         hello: String!
         user: User!
         todoTasks: [Todo]!
+        todoTask(pk: String!): Todo!
     }
 
     type User {
@@ -35,6 +37,15 @@ def resolve_user(obj, info):
 def resolve_todoTasks(*_):
     todo_tasks = Todo.objects.all()
     return todo_tasks
+
+# resolver function for todoTask field with a compulsory argument, pk.
+@query.field("todoTask")
+def resolve_todoTask(*_, pk):
+    try:
+        todo_task = Todo.objects.get(pk=pk)
+        return todo_task
+    except ObjectDoesNotExist:
+        return "Todo task with name does not exist"
 
 
 user = ObjectType('User')
