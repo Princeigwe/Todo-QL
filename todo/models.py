@@ -14,3 +14,8 @@ class Todo(models.Model):
     
     def __str__(self): 
         return self.name
+
+
+class Reminder(models.Model):
+    name= models.CharField(max_length=50)
+    completed = models.BooleanField(default=False)

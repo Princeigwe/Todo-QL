@@ -1,5 +1,5 @@
-from ariadne import QueryType, make_executable_schema, gql, ObjectType, MutationType
-from todo.models import Todo
+from ariadne import QueryType, make_executable_schema, gql, ObjectType, MutationType, UnionType
+from todo.models import Todo, Reminder
 from django.core.exceptions import ObjectDoesNotExist
 
 type_defs = gql("""
@@ -7,6 +7,7 @@ type_defs = gql("""
         hello: String!
         todoTasks: [Todo]!
         todoTask(pk: String!): Todo!
+        searchTasks(name: String!): [Task!]
     }
 
     type Mutation {
@@ -24,11 +25,18 @@ type_defs = gql("""
         category: TaskCategory!
     }
 
+    type Reminder {
+        name: String
+        completed: Boolean!
+    }
+
     enum TaskCategory {
         IMPORTANT
         URGENT
         DEFAULT
     }
+
+    union Task = Todo | Reminder
 
 
 """)
@@ -55,6 +63,14 @@ def resolve_todoTask(*_, pk):
         return todo_task
     except ObjectDoesNotExist:
         return "Todo task with name does not exist"
+
+
+@query.field("searchTasks")
+def resolve_searchTasks(*_, name):
+    reminders = Reminder.objects.filter(name=name)
+    todos = Todo.objects.filter(name=name)
+    items = list(reminders) + list(todos)
+    return items
 
 
 mutation = MutationType()
@@ -89,5 +105,16 @@ def resolve_deleteTasks(*_):
     return "Tasks deleted"
 
 
+task = UnionType("Task")
+
+@task.type_resolver
+def resolve_searchTasks(obj, *_):
+    if isinstance(obj, Reminder):
+        return "Reminder"
+    if isinstance(obj, Todo):
+        return "Todo"
+    return None
+
+
 # making the Python code schema executable in GraphQL
-schema = make_executable_schema(type_defs, query, mutation)
+schema = make_executable_schema(type_defs, query, mutation, task)
