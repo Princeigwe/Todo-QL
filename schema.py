@@ -18,15 +18,19 @@ type_defs = gql("""
         createReminder(name: String!): Reminder!
     }
 
+    interface Work {
+        name: String
+    }
 
-    type Todo {
+
+    type Todo implements Work {
         pk: String
         name: String
         description: String
         category: TaskCategory!
     }
 
-    type Reminder {
+    type Reminder implements Work {
         name: String
         completed: Boolean!
     }
