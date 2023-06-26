@@ -107,8 +107,12 @@ def resolve_deleteTasks(*_):
 
 task = UnionType("Task")
 
+# If obj is an instance of the Reminder model, the function returns the string "Reminder" as the resolved type name.
+# If obj is an instance of the Todo model, the function returns the string "Todo" as the resolved type name.
+# If obj is not an instance of either Reminder or Todo, the function returns None.
+
 @task.type_resolver
-def resolve_searchTasks(obj, *_):
+def resolve_taskType(obj, *_):
     if isinstance(obj, Reminder):
         return "Reminder"
     if isinstance(obj, Todo):
