@@ -15,6 +15,7 @@ type_defs = gql("""
         updateTask(pk: Int!, name: String, description: String): Todo!
         deleteTask(pk: Int!): String
         deleteTasks: String
+        createReminder(name: String!): Reminder!
     }
 
 
@@ -103,6 +104,12 @@ def resolve_deleteTasks(*_):
     tasks = Todo.objects.all()
     tasks.delete()
     return "Tasks deleted"
+
+@mutation.field("createReminder")
+def resolve_createReminder(obj, info, name):
+    reminder = Reminder.objects.create(name=name)
+    reminder.save()
+    return reminder
 
 
 task = UnionType("Task")
