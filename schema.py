@@ -1,6 +1,10 @@
-from ariadne import QueryType, make_executable_schema, gql, ObjectType, MutationType, UnionType
+from ariadne import QueryType, make_executable_schema, gql, ObjectType, MutationType, UnionType, SubscriptionType
 from todo.models import Todo, Reminder
 from django.core.exceptions import ObjectDoesNotExist
+import asyncio
+from channels.db import database_sync_to_async
+from asgiref.sync import async_to_sync
+
 
 type_defs = gql("""
     type Query {
@@ -16,6 +20,10 @@ type_defs = gql("""
         deleteTask(pk: Int!): String
         deleteTasks: String
         createReminder(name: String!): Reminder!
+    }
+
+    type Subscription {
+        getTodo: Todo!
     }
 
     interface Work {
@@ -116,6 +124,21 @@ def resolve_createReminder(obj, info, name):
     return reminder
 
 
+subscription = SubscriptionType()
+
+@subscription.source("getTodo")
+async def retrieve_todo_created(*_):
+    while True:
+        await asyncio.sleep(1)
+        # yield await database_sync_to_async(lambda: Todo.objects.last())()
+        last_todo = await database_sync_to_async(Todo.objects.last)()
+        yield last_todo
+
+@subscription.field("getTodo")
+async def resolve_getTodo(todo, obj):
+    return todo
+
+
 task = UnionType("Task")
 
 # If obj is an instance of the Reminder model, the function returns the string "Reminder" as the resolved type name.
@@ -132,4 +155,4 @@ def resolve_taskType(obj, *_):
 
 
 # making the Python code schema executable in GraphQL
-schema = make_executable_schema(type_defs, query, mutation, task)
+schema = make_executable_schema(type_defs, query, mutation, subscription, task)
