@@ -3,7 +3,6 @@ from todo.models import Todo, Reminder
 from django.core.exceptions import ObjectDoesNotExist
 import asyncio
 from channels.db import database_sync_to_async
-from asgiref.sync import async_to_sync
 
 
 type_defs = gql("""
@@ -64,15 +63,15 @@ def resolve_hello(*_):
 
 
 @query.field("todoTasks")
-def resolve_todoTasks(*_):
-    todo_tasks = Todo.objects.all()
+async def resolve_todoTasks(obj, info):
+    todo_tasks = await database_sync_to_async(lambda: Todo.objects.all())()
     return todo_tasks
 
 # resolver function for todoTask field with a compulsory argument, pk.
 @query.field("todoTask")
 def resolve_todoTask(*_, pk):
     try:
-        todo_task = Todo.objects.get(pk=pk)
+        todo_task = database_sync_to_async(lambda: Todo.objects.get(pk=pk))()
         return todo_task
     except ObjectDoesNotExist:
         return "Todo task with name does not exist"
@@ -80,8 +79,8 @@ def resolve_todoTask(*_, pk):
 
 @query.field("searchTasks")
 def resolve_searchTasks(*_, name):
-    reminders = Reminder.objects.filter(name=name)
-    todos = Todo.objects.filter(name=name)
+    reminders = database_sync_to_async(Reminder.objects.filter(name=name))()
+    todos = database_sync_to_async(Todo.objects.filter(name=name))()
     items = list(reminders) + list(todos)
     return items
 
@@ -91,18 +90,19 @@ mutation = MutationType()
 
 @mutation.field("createTask")
 def resolve_createTask(*_, name, description, category):
-    task = Todo.objects.create(name=name, description=description, category=category)
-    task.save()
+    # update create task operation to run synchronous database operation in async environment
+    task = database_sync_to_async(lambda: Todo.objects.create(name=name, description=description, category=category))()
+    database_sync_to_async(lambda: task.save())()
     return task
 
 @mutation.field("updateTask")
 def resolve_updateTask(*_, pk, name=None, description=None):
-    task = Todo.objects.get(pk=pk)
+    task = database_sync_to_async(lambda: Todo.objects.get(pk=pk))()
     if name:
         task.name = name
     if description:
         task.description = description
-    task.save()
+    database_sync_to_async(lambda: task.save())()
     return task
 
 @mutation.field("deleteTask")
